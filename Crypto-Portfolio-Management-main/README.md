@@ -13,7 +13,7 @@ The **Cryptocurrency Price Tracker** is a web application that fetches **real-ti
 ## Installation 🛠️
 ```bash
 # Clone the repository
-git clone https://github.com/Atharv564/Crypto-Portfolio-Management.git
+git clone  https://github.com/varshabombe10/Crypto-Portfolio-Management-main.git
 ```
 # Install dependencies
 ```
