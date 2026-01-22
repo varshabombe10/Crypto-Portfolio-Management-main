@@ -1,0 +1,348 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Market</title>
+    <link rel="icon" type="image/png" href="{% static 'images/icon.png' %}">
+    <!-- Bootstrap & Chart.js -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* General Styling */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #121212;
+            color: #ffffff;
+        }
+
+        /* Navbar */
+        .navbar {
+            background: #1f1f1f;
+        }
+
+        /* Crypto Price Cards */
+        .crypto-card {
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 255, 255, 0.2);
+            text-align: center;
+            transition: 0.3s;
+            width: 200px;
+        }
+
+        .crypto-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(0, 255, 255, 0.3);
+        }
+
+        /* Crypto Container */
+        .crypto-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        /* Portfolio & Chart Containers */
+        .portfolio-container, .chart-container {
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 255, 255, 0.2);
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
+
+        /* Table Styling */
+        .table-dark {
+            background: #272727;
+        }
+
+        /* Chart */
+        canvas {
+            width: 100% !important;
+            height: 400px !important;
+        }
+
+        /* Buttons */
+        .btn-custom {
+            background: #00b894;
+            border: none;
+            color: white;
+            transition: 0.3s;
+        }
+
+        .btn-custom:hover {
+            background: #00a57f;
+        }
+        .crypto-scroller {
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+            width: 100%;
+            padding: 10px 0;
+        }
+        
+        .crypto-track {
+            display: flex;
+            gap: 15px;
+            width: max-content;
+            animation: scroll-left 30s linear infinite; /* Adjust speed */
+        }
+        
+        .crypto-card {
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 255, 255, 0.2);
+            text-align: center;
+            width: 200px;
+        }
+        
+        /* Infinite Scroll Keyframes */
+        @keyframes scroll-left {
+            from {
+                transform: translateX(0);
+            }
+            to {
+                transform: translateX(-50%); /* Scrolls halfway before looping */
+            }
+        }
+        .crypto-track:hover {
+            animation-play-state: paused;
+        }              
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Crypto Market</a>
+            <div class="d-flex">
+                <span class="me-3 text-light">Welcome, <strong>{{ request.user.username }}</strong></span>
+                <a href="{% url 'logout' %}" class="btn btn-danger btn-sm">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h1 class="text-center">Live Crypto Prices</h1>
+        <h2 class="text-center mt-4">Top 50 Coins</h2>
+
+        <!-- Crypto Price Cards -->
+        {% comment %} <pre>{{ crypto_data|safe }}</pre> <!-- Debugging: See the actual API data --> {% endcomment %}
+
+        <div class="crypto-scroller">
+        <div class="crypto-track" id="cryptoTrack">
+            {% for coin in crypto_data %}
+            <div class="crypto-card">
+                <h4 class="text-light">{{ coin.name }}</h4>
+                <h5 class="text-success">$ {{ coin.current_price }}</h5>
+            </div>
+            {% endfor %}
+        </div>
+        </div>
+                
+        
+
+        <!-- 7-Day Price Trends -->
+        <h2 class="text-center mt-4">7-Day Price Trends</h2>
+        <div class="chart-container">
+            <canvas id="cryptoChart"></canvas>
+        </div>
+
+        <!-- User Portfolio -->
+        <h2 class="text-center mt-4">Your Portfolio</h2>
+        <div class="portfolio-container">
+            <p class="text-center"><strong>Total Portfolio Value:</strong> ${{ portfolio_value|floatformat:2 }}</p>
+
+            <table class="table table-dark table-hover text-center">
+                <thead>
+                    <tr>
+                        <th>Coin</th>
+                        <th>Quantity</th>
+                        <th>Current Value</th>
+                        <th>Actions</th>  <!-- New Column for Actions -->
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in portfolio %}
+                    <tr>
+                        <td>{{ item.coin }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>${{ item.current_value }}</td>
+                        <td>
+                            <a href="{% url 'edit_portfolio' item.id %}" class="btn btn-warning btn-sm">Edit</a>
+                            <a href="{% url 'delete_portfolio' item.id %}" class="btn btn-danger btn-sm">Delete</a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4">No portfolio items found.</td></tr>
+                {% endfor %}
+                
+                </tbody>                
+            </table>
+            
+
+            <!-- Add to Portfolio Form -->
+            <!-- Add to Portfolio Form -->
+            <h3 class="text-center mt-4">
+                <img src="https://cdn-icons-png.flaticon.com/128/3135/3135789.png" width="30"> Add to Portfolio
+            </h3>
+            
+            <div class="portfolio-form-container mx-auto mt-3 p-4 rounded shadow-lg" style="max-width: 500px; background: #222; color: white;">
+                <form method="POST" class="row g-3">
+                    {% csrf_token %}
+                    
+                    {% for field in form %}
+                    <div class="col-12">
+                        <label for="{{ field.id_for_label }}" class="form-label text-light">{{ field.label }}</label>
+                        <input type="text" class="form-control bg-dark text-light border-0" id="{{ field.id_for_label }}" name="{{ field.name }}" value="{{ field.value|default_if_none:'' }}" placeholder="Enter {{ field.label }}">
+                    </div>
+                    {% endfor %}
+            
+                    <div class="text-center mt-3">
+                        <button type="submit" class="btn btn-success btn-lg w-100">
+                            <i class="fas fa-plus"></i> Add to Portfolio
+                        </button>
+                    </div>
+                </form>
+            </div>
+                 
+        </div>
+    </div>
+
+    <!-- Chart.js Script -->
+    <script>
+        // Parse historical price data from Django
+        const historicalData = JSON.parse('{{ historical_data_json|safe }}');
+
+        // Define chart labels (days)
+        const labels = ["7 days ago", "6 days ago", "5 days ago", "4 days ago", "3 days ago", "2 days ago", "Yesterday"];
+        const datasets = [];
+
+        // Generate datasets dynamically
+        Object.keys(historicalData).forEach((coin, index) => {
+            datasets.push({
+                label: coin.toUpperCase(),
+                data: historicalData[coin],
+                borderColor: ["#ff4757", "#1e90ff", "#2ed573", "#f39c12", "#9b59b6"][index],
+                borderWidth: 2,
+                fill: false,
+                tension: 0.3
+            });
+        });
+
+        // Create the line chart
+        const ctx = document.getElementById("cryptoChart").getContext("2d");
+        new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: 'Price in USD'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+    <script>
+        function confirmDelete(deleteUrl) {
+            if (confirm("Are you sure you want to delete this portfolio entry?")) {
+                window.location.href = deleteUrl;
+            }
+        }
+    </script>    
+    <script>
+        function loadEditForm(id, name, value) {
+            let formHtml = `
+                <input type="hidden" name="portfolio_id" value="${id}">
+                <div class="mb-3">
+                    <label for="portfolioName" class="form-label">Portfolio Name</label>
+                    <input type="text" class="form-control" id="portfolioName" name="name" value="${name}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="portfolioValue" class="form-label">Portfolio Value</label>
+                    <input type="text" class="form-control" id="portfolioValue" name="value" value="${value}" required>
+                </div>
+            `;
+            document.getElementById("modalFormContent").innerHTML = formHtml;
+            
+            // Set form action to update the portfolio
+            document.getElementById("editPortfolioForm").action = `/edit-portfolio/`;
+        }
+        {% comment %} document.addEventListener("DOMContentLoaded", function () {
+            const track = document.getElementById("cryptoTrack");
+            const totalWidth = track.scrollWidth; // Get total width of the scrolling content
+            const speed = totalWidth / 5; // Adjust speed dynamically (higher divisor = slower)
+        
+            track.style.animationDuration = `${speed}s`;
+        });
+         {% endcomment %}
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const track = document.querySelector(".crypto-track");
+            if (!track) return;
+        
+            const container = document.querySelector(".crypto-scroller");
+            const trackWidth = track.scrollWidth;
+            const containerWidth = container.clientWidth;
+        
+            // Adjust speed: longer tracks scroll slower
+            const speed = Math.max(20, trackWidth / 30); // Adjust divisor for better speed
+        
+            track.style.animationDuration = `${speed}s`;
+        });
+        
+        <!---->
+        document.addEventListener("DOMContentLoaded", function () {
+            const track = document.getElementById("cryptoTrack");
+            if (!track) return;
+        
+            const items = track.children;
+            const clone = track.innerHTML; // Clone existing elements
+        
+            // Append duplicate elements for infinite scrolling
+            track.innerHTML += clone; 
+        
+            // Adjust speed dynamically based on content width
+            const trackWidth = track.scrollWidth / 2; // Since we doubled it
+            const speed = Math.max(20, trackWidth / 30); // Adjust speed based on width
+        
+            track.style.animationDuration = `${speed}s`;
+        });
+        
+    </script>
+</body>
+</html>
